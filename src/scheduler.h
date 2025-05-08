@@ -26,11 +26,7 @@ protected:
     std::string name;
     
 public:
-    Scheduler(const std::string& schedulerName, int switchTime)
-        : totalTime(0), cpuBusyTime(0), contextSwitchTime(switchTime),
-          contextSwitchCount(0), isCpuBusy(false), cpuUtilization(0.0),
-          currentProcess(nullptr), name(schedulerName) {}
-          
+    Scheduler(const std::string& schedulerName, int switchTime);
     virtual ~Scheduler() = default;
     
     // Pure virtual methods to be implemented by derived classes
@@ -41,18 +37,10 @@ public:
     virtual void updateWaitingTime(int timeElapsed) = 0;
     
     // Common methods
-    void setCurrentProcess(std::shared_ptr<Process> process) {
-        currentProcess = process;
-        isCpuBusy = (process != nullptr);
-    }
-    
-    std::shared_ptr<Process> getCurrentProcess() const { return currentProcess; }
-    bool hasCpuProcess() const { return isCpuBusy && currentProcess != nullptr; }
-    
-    void clearCurrentProcess() {
-        currentProcess = nullptr;
-        isCpuBusy = false;
-    }
+    void setCurrentProcess(std::shared_ptr<Process> process);
+    std::shared_ptr<Process> getCurrentProcess() const;
+    bool hasCpuProcess() const;
+    void clearCurrentProcess();
     
     // Statistics methods
     void setTotalTime(int time) { totalTime = time; }
@@ -63,18 +51,15 @@ public:
     // Getters
     int getTotalTime() const { return totalTime; }
     int getCpuBusyTime() const { return cpuBusyTime; }
-    double getCpuUtilization() const { return cpuUtilization; }
+    double getCpuUtilization() const;
     int getContextSwitchCount() const { return contextSwitchCount; }
     int getContextSwitchTime() const { return contextSwitchTime; }
     const std::string& getName() const { return name; }
     
     // Process collection methods
-    void addToAllProcesses(std::shared_ptr<Process> process) {
-        allProcesses.push_back(process);
-    }
-    
-    const std::vector<std::shared_ptr<Process>>& getAllProcesses() const {
-        return allProcesses;
+    void addToAllProcesses(std::shared_ptr<Process> process);
+    const std::vector<std::shared_ptr<Process>>& getAllProcesses() const { 
+        return allProcesses; 
     }
 };
 
