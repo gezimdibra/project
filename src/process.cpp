@@ -74,28 +74,24 @@ int Process::getNextCPUBurstTime() const {
 }
 
 void Process::setFinishTime(int time) {
-    if (time > 0) {  // Only set if time is valid
-        finishTime = time;
-        calculateStatistics();
-    }
+    finishTime = time;
+    calculateStatistics();
 }
 
 void Process::calculateStatistics() {
-    if (finishTime > 0) {  // Only calculate if finish time is valid
-        turnaroundTime = finishTime - arrivalTime;
-        
-        // Calculate actual waiting time
-        waitingTime = turnaroundTime - serviceTime - ioTime;
-        
-        // Ensure waiting time is not negative
-        if (waitingTime < 0) {
-            waitingTime = 0;
-        }
+    // Calculate turnaround time (completion time - arrival time)
+    turnaroundTime = finishTime - arrivalTime;
+    
+    // Calculate waiting time (turnaround time - total burst time)
+    int totalBurstTime = serviceTime + ioTime;
+    waitingTime = turnaroundTime - totalBurstTime;
+    
+    // Ensure waiting time is not negative
+    if (waitingTime < 0) {
+        waitingTime = 0;
     }
 }
 
 void Process::incrementWaitingTime(int time) {
-    if (time > 0) {
-        waitingTime += time;
-    }
+    waitingTime += time;
 }
