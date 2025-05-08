@@ -63,12 +63,16 @@ void Simulator::setParams(const SimulationParams& simulationParams) {
         eventQueue.pop();
     }
     
-    // Schedule process arrivals
+    // Schedule process arrivals and initialize scheduler
     for (const auto& process : processes) {
+        // Reset process state
+        process->setState(ProcessState::NEW);
+        
+        // Schedule arrival event
         Event arrivalEvent(EventType::PROCESS_ARRIVAL, process->getArrivalTime(), process);
         eventQueue.push(arrivalEvent);
         
-        // Add to active scheduler's process list
+        // Add to scheduler's process list
         activeScheduler->addToAllProcesses(process);
     }
     
@@ -88,6 +92,7 @@ void Simulator::run() {
     // Reset simulation state
     currentTime = 0;
     activeScheduler->setTotalTime(0);
+    activeScheduler->clearCurrentProcess();
     
     // Main event loop
     while (!eventQueue.empty()) {
@@ -320,13 +325,6 @@ void Simulator::checkPreemption(std::shared_ptr<Process> newProcess) {
     
     // Check if we should preempt
     if (activeScheduler->shouldPreempt(newProcess)) {
-        // Find and remove the completion event for the current process
-        // (This is a simplification - in a real implementation, we'd need to
-        // search the event queue and remove the event, but that's complex in C++)
-        
-        // Update remaining time for current process
-        // (again, this is simplified)
-        
         if (params.verboseMode) {
             logStateTransition(currentProcess, ProcessState::RUNNING, ProcessState::READY);
         }
