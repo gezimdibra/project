@@ -193,7 +193,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         }
         
         process->setState(ProcessState::TERMINATED);
-        process->setFinishTime(currentTime);
+        process->setFinishTime(currentTime);  // Set finish time when process actually completes
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
@@ -246,7 +246,8 @@ void Simulator::processTimerInterrupt(const Event& event, std::shared_ptr<Schedu
     }
 }
 
-void Simulator::processContextSwitchComplete(const Event& event, std::shared_ptr<Scheduler> scheduler) {
+void Simulator::processContextSwitchComplete([[maybe_unused]] const Event& event, 
+                                           std::shared_ptr<Scheduler> scheduler) {
     scheduleNextEvent(scheduler);
 }
 
@@ -300,7 +301,8 @@ void Simulator::checkPreemption(std::shared_ptr<Process> newProcess, std::shared
     }
 }
 
-void Simulator::contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_ptr<Process> newProcess,
+void Simulator::contextSwitch([[maybe_unused]] std::shared_ptr<Process> oldProcess, 
+                            std::shared_ptr<Process> newProcess,
                             std::shared_ptr<Scheduler> scheduler) {
     scheduler->clearCurrentProcess();
     scheduler->incrementContextSwitchCount();
