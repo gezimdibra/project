@@ -79,16 +79,14 @@ void Process::setFinishTime(int time) {
 }
 
 void Process::calculateStatistics() {
-    // Calculate turnaround time
+    // Calculate turnaround time (completion time - arrival time)
     turnaroundTime = finishTime - arrivalTime;
     
-    // Calculate waiting time by subtracting total processing time from turnaround time
+    // Calculate actual waiting time by subtracting CPU and I/O time from turnaround time
     int totalProcessingTime = serviceTime + ioTime;
-    
-    // Account for context switches in waiting time calculation
     waitingTime = turnaroundTime - totalProcessingTime;
     
-    // Ensure waiting time is not negative
+    // Account for context switch overhead
     if (waitingTime < 0) {
         waitingTime = 0;
     }
