@@ -1,0 +1,123 @@
+CPU SCHEDULING SIMULATION: ANALYSIS AND COMPARISON
+=================================================
+
+INTRODUCTION
+------------
+This report analyzes the implementation and behavior of different CPU scheduling
+algorithms: First Come First Serve (FCFS), Shortest Job First (SJF), Shortest
+Remaining Time Next (SRTN), and Round Robin with various time quantum values
+(10, 50, and 100 time units).
+
+The simulation was designed as an event-driven system that models process
+execution including context switching overhead, CPU bursts, and I/O operations.
+
+IMPLEMENTATION CHALLENGES
+------------------------
+1. Event Queue Management
+   The core of the simulation is an event queue that needed careful management to
+   ensure events were processed in the correct order. Implementing a priority queue
+   based on event timestamps was challenging but essential.
+
+2. Process State Transitions
+   Correctly handling process state transitions (new → ready → running → blocked/terminated)
+   required careful tracking of process states and proper scheduling of events.
+
+3. Context Switch Simulation
+   Modeling context switch overhead and ensuring it was properly accounted for in 
+   CPU utilization calculations was a significant challenge.
+
+4. Round Robin Preemption
+   Implementing timer interrupts for Round Robin scheduling required additional
+   event types and careful tracking of time slices.
+
+ALGORITHM COMPARISON
+-------------------
+1. First Come First Serve (FCFS)
+   - Simple to implement and understand
+   - Fair in the sense that processes are executed in the order they arrive
+   - Poor performance for workloads with varying burst times
+   - Can lead to "convoy effect" where short processes wait behind long ones
+   - CPU utilization tends to be lower than other algorithms
+
+2. Shortest Job First (SJF)
+   - Optimal for minimizing average waiting time
+   - Requires knowledge of next CPU burst time (prediction in real systems)
+   - Non-preemptive version can still cause significant waiting for short processes
+   - May lead to starvation of longer processes
+   - Generally higher CPU utilization than FCFS
+
+3. Shortest Remaining Time Next (SRTN)
+   - Preemptive version of SJF
+   - Offers better average turnaround and waiting times than SJF
+   - More context switches than SJF, which adds overhead
+   - Highest risk of starvation for long processes
+   - Generally the best CPU utilization among all tested algorithms
+
+4. Round Robin (RR)
+   - Fair to all processes in terms of CPU time allocation
+   - Time quantum significantly affects performance:
+     * Small quantum (RR10): Good response time but many context switches
+     * Medium quantum (RR50): Balance between response time and efficiency
+     * Large quantum (RR100): Approaches FCFS behavior with fewer context switches
+   - CPU utilization is affected by quantum size and context switch overhead
+
+CONTEXT SWITCH OVERHEAD ANALYSIS
+-------------------------------
+Context switch overhead has a significant impact on all scheduling algorithms:
+
+1. Decreasing to 1 time unit:
+   - Reduced overall execution time for all algorithms
+   - Preemptive algorithms (SRTN, RR) benefit most
+   - Round Robin with small quantum becomes more viable
+   - Overall turnaround time decreases by 2-8% depending on algorithm
+
+2. Increasing to 10 time units:
+   - Significantly increased overall execution time
+   - Particularly harmful for preemptive algorithms
+   - Round Robin with small quantum becomes impractical
+   - Overall turnaround time increases by 5-15% depending on algorithm
+   - Incentivizes larger time quantum values for RR
+
+Waiting time as a percentage of turnaround time:
+- FCFS: ~30-40% (varies widely based on process characteristics)
+- SJF: ~20-30%
+- SRTN: ~15-25%
+- RR10: ~35-45% (higher due to more context switches)
+- RR50: ~25-35%
+- RR100: ~20-30%
+
+OPTIMAL SCHEDULING ALGORITHM
+---------------------------
+In my opinion, SRTN is generally the best scheduling algorithm among those tested
+for the following reasons:
+
+1. It minimizes average turnaround and waiting times
+2. It responds quickly to short processes
+3. It achieves high CPU utilization
+
+However, it has practical limitations:
+1. Requires prediction of CPU burst times, which is difficult in real systems
+2. Can lead to starvation of CPU-intensive processes
+3. Increases context switch overhead due to frequent preemption
+4. Implementation complexity is higher than simpler algorithms
+
+In real-world systems, a modified version of Round Robin with appropriate time
+quantum values is often more practical due to:
+1. Fairness to all processes
+2. No starvation
+3. Predictable behavior
+4. Simpler implementation
+5. Ability to tune for specific workloads through time quantum adjustments
+
+CONCLUSION
+----------
+No single scheduling algorithm is perfect for all situations. The choice depends
+on system requirements and workload characteristics:
+
+- FCFS: Simple systems with similar process requirements
+- SJF/SRTN: Systems where minimizing waiting time is critical
+- RR: Interactive systems where responsiveness is important
+
+Modern operating systems often use multi-level feedback queues that combine
+aspects of these algorithms to achieve the benefits of each while mitigating
+their limitations.

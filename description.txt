@@ -1,0 +1,98 @@
+CPU SCHEDULING SIMULATOR
+=======================
+
+OVERVIEW
+--------
+This project implements an event-driven CPU scheduling simulator that compares different
+scheduling algorithms: FCFS, SJF, SRTN, and Round Robin with various time quantum values.
+
+LANGUAGE AND COMPILATION
+------------------------
+The project is implemented in C++ (C++17) and can be compiled with g++ on Linux systems.
+A Makefile is provided for easy compilation.
+
+FILES ORGANIZATION
+-----------------
+1. Source Files (src/):
+   - main.cpp: Program entry point, command-line argument parsing
+   - process.h/cpp: Process data structure and related functions
+   - event.h/cpp: Event data structure and event queue implementation
+   - simulator.h/cpp: Main simulation engine
+   - scheduler.h/cpp: Abstract scheduler class and common functionality
+   - fcfs.h/cpp: First Come First Serve implementation
+   - sjf.h/cpp: Shortest Job First (non-preemptive) implementation
+   - srtn.h/cpp: Shortest Remaining Time Next (preemptive) implementation
+   - rr.h/cpp: Round Robin implementation (handles all time quantum variants)
+   - parser.h/cpp: Input parser for reading simulation data
+   - generator.cpp: Random process data generator
+
+2. Executables:
+   - sim: Main simulator executable
+   - generate: Data generator executable
+
+3. Data Files:
+   - input.txt: Sample input file
+   - random_input.txt: Generated random input file (50+ processes)
+
+4. Output Files (output/):
+   - default_output.txt: Default mode output (all algorithms)
+   - detailed_output.txt: Detailed information for all algorithms
+   - verbose_output.txt: Verbose output for all algorithms
+   - fcfs_output.txt, sjf_output.txt, etc.: Individual algorithm outputs
+   - fcfs_detailed_verbose.txt, etc.: Combined detailed and verbose output for each algorithm
+
+5. Trace Files (trace/):
+   - Contains algorithm execution traces from verbose mode for each algorithm
+
+BUILDING AND RUNNING
+-------------------
+1. To compile the simulator:
+   $ make
+
+2. To generate random test data (50+ processes):
+   $ make generate
+   (or $ ./generate > random_input.txt)
+
+3. To run the simulator with default options:
+   $ ./sim < input.txt
+
+4. To run with detailed information:
+   $ ./sim -d < input.txt
+
+5. To run in verbose mode:
+   $ ./sim -v < input.txt
+
+6. To run a specific algorithm:
+   $ ./sim -a FCFS < input.txt
+   $ ./sim -a SJF < input.txt
+   $ ./sim -a SRTN < input.txt
+   $ ./sim -a RR10 < input.txt
+   $ ./sim -a RR50 < input.txt
+   $ ./sim -a RR100 < input.txt
+
+7. Flags can be combined:
+   $ ./sim -d -v -a FCFS < input.txt
+
+8. To run all simulations and generate reports:
+   $ make run
+
+9. To clean up compiled files:
+   $ make clean
+
+PROJECT REPORT
+-------------
+The file "report.txt" contains a detailed analysis of the different scheduling algorithms,
+including their advantages, disadvantages, and performance characteristics.
+
+FINDINGS
+--------
+See output/comparison.txt for a summary of findings for each algorithm, including:
+- Average turnaround time
+- Average waiting time
+- CPU utilization
+- Effects of context switch time changes
+- Analysis of the overall performance
+
+AUTHOR
+------
+Created for Operating Systems course - 2025
