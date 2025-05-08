@@ -32,7 +32,10 @@ Simulator::~Simulator() {
 }
 
 void Simulator::initialize(const std::vector<std::shared_ptr<Process>>& processList) {
+    // Sort processes by arrival time for FCFS
     processes = processList;
+    std::sort(processes.begin(), processes.end(),
+              [](const auto& a, const auto& b) { return a->getArrivalTime() < b->getArrivalTime(); });
     
     // Reset all processes to NEW state
     for (auto& process : processes) {
@@ -96,57 +99,66 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         eventQueue.pop();
     }
     
-    // Reset all processes and add to scheduler
+    // Reset all processes and add initial events
     for (auto& process : processes) {
         process->setState(ProcessState::NEW);
-        // Ensure event time is not less than current time
-        int arrivalTime = std::max(currentTime, process->getArrivalTime());
+        int arrivalTime = process->getArrivalTime();
         Event arrivalEvent(EventType::PROCESS_ARRIVAL, arrivalTime, process);
         eventQueue.push(arrivalEvent);
         scheduler->addToAllProcesses(process);
     }
+    
+    int totalCpuTime = 0;
     
     // Main event loop
     while (!eventQueue.empty()) {
         Event event = eventQueue.top();
         eventQueue.pop();
         
-        // Ensure time only moves forward
-        currentTime = std::max(currentTime, event.getTime());
-        
-        // Update waiting time and CPU busy time
-        if (scheduler->hasCpuProcess()) {
-            scheduler->incrementCpuBusyTime(event.getTime() - currentTime);
+        // Update current time
+        if (event.getTime() > currentTime) {
+            int timeElapsed = event.getTime() - currentTime;
             
-            // For Round Robin, update time slice
-            if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(scheduler)) {
-                rrScheduler->decrementTimeSlice(event.getTime() - currentTime);
+            // Update CPU busy time if a process is running
+            if (scheduler->hasCpuProcess()) {
+                scheduler->incrementCpuBusyTime(timeElapsed);
+                totalCpuTime += timeElapsed;
+                
+                // Update RR time slice if applicable
+                if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(scheduler)) {
+                    rrScheduler->decrementTimeSlice(timeElapsed);
+                }
             }
+            
+            // Update waiting time for processes in ready queue
+            scheduler->updateWaitingTime(timeElapsed);
+            currentTime = event.getTime();
         }
-        
-        // Update waiting time for processes in ready queue
-        scheduler->updateWaitingTime(event.getTime() - currentTime);
         
         // Process the event
         switch (event.getType()) {
             case EventType::PROCESS_ARRIVAL:
                 processArrival(event, scheduler);
                 break;
+                
             case EventType::CPU_BURST_COMPLETION:
                 processCPUBurstCompletion(event, scheduler);
                 break;
+                
             case EventType::IO_COMPLETION:
                 processIOCompletion(event, scheduler);
                 break;
+                
             case EventType::TIMER_INTERRUPT:
                 processTimerInterrupt(event, scheduler);
                 break;
+                
             case EventType::CONTEXT_SWITCH_COMPLETE:
                 processContextSwitchComplete(event, scheduler);
                 break;
         }
         
-        // Check for timer interrupt in Round Robin
+        // Check for RR time slice expiration
         if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(scheduler)) {
             if (rrScheduler->hasCpuProcess() && rrScheduler->isTimeSliceExpired()) {
                 Event timerEvent(EventType::TIMER_INTERRUPT, currentTime, 
@@ -159,12 +171,10 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     // Update final statistics
     scheduler->setTotalTime(currentTime);
     
-    // Ensure all processes have proper finish times
-    for (auto& process : scheduler->getAllProcesses()) {
-        if (!process->isCompleted()) {
-            process->setState(ProcessState::TERMINATED);
-            process->setFinishTime(currentTime);
-        }
+    // Calculate CPU utilization
+    if (currentTime > 0) {
+        double utilization = (static_cast<double>(totalCpuTime) / currentTime) * 100.0;
+        scheduler->setCpuUtilization(utilization);
     }
 }
 
@@ -189,6 +199,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
     process->advanceBurst();
     
     if (process->getCurrentBurstIndex() >= process->getTotalBursts()) {
+        // Process has completed all bursts
         if (params.verboseMode) {
             logStateTransition(process, ProcessState::RUNNING, ProcessState::TERMINATED);
         }
@@ -198,13 +209,12 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
+        // Process needs I/O
         if (params.verboseMode) {
             logStateTransition(process, ProcessState::RUNNING, ProcessState::BLOCKED);
         }
         
         process->setState(ProcessState::BLOCKED);
-        
-        // Calculate I/O completion time based on current time
         int ioCompletionTime = currentTime + process->getCurrentBurst().duration;
         Event ioCompletionEvent(EventType::IO_COMPLETION, ioCompletionTime, process);
         eventQueue.push(ioCompletionEvent);
@@ -280,7 +290,6 @@ void Simulator::scheduleProcess(std::shared_ptr<Process> process, std::shared_pt
         }
     }
     
-    // Calculate completion time based on current time
     int completionTime = currentTime + remaining;
     Event completionEvent(EventType::CPU_BURST_COMPLETION, completionTime, process);
     eventQueue.push(completionEvent);
@@ -308,7 +317,6 @@ void Simulator::contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_p
     scheduler->clearCurrentProcess();
     scheduler->incrementContextSwitchCount();
     
-    // Calculate context switch completion time based on current time
     int completionTime = currentTime + processSwitchTime;
     Event completionEvent(EventType::CONTEXT_SWITCH_COMPLETE, completionTime, newProcess);
     eventQueue.push(completionEvent);
@@ -348,19 +356,22 @@ void Simulator::outputResults() const {
 }
 
 void Simulator::outputSchedulerResults(std::shared_ptr<Scheduler> scheduler) const {
-    std::cout << scheduler->getName() << ": Total Time required is " 
-              << scheduler->getTotalTime() << " time units\n"
-              << "CPU Utilization is " 
-              << std::fixed << std::setprecision(0) << scheduler->getCpuUtilization() << "%\n";
+    std::cout << "\n" << scheduler->getName() << " Results:\n"
+              << "Total Time: " << scheduler->getTotalTime() << " time units\n"
+              << "CPU Utilization: " << std::fixed << std::setprecision(2) 
+              << scheduler->getCpuUtilization() << "%\n"
+              << "Context Switches: " << scheduler->getContextSwitchCount() << "\n\n";
     
     if (params.detailedMode) {
+        std::cout << "Process Details:\n";
         for (const auto& process : scheduler->getAllProcesses()) {
             std::cout << "Process " << process->getId() << ":\n"
-                      << "  arrival time: " << process->getArrivalTime() << "\n"
-                      << "  service time: " << process->getServiceTime() << " units\n"
-                      << "  I/O time: " << process->getIOTime() << " units\n"
-                      << "  turnaround time: " << process->getTurnaroundTime() << " units\n"
-                      << "  finish time: " << process->getFinishTime() << " units\n";
+                      << "  Arrival Time: " << process->getArrivalTime() << "\n"
+                      << "  Service Time: " << process->getServiceTime() << "\n"
+                      << "  I/O Time: " << process->getIOTime() << "\n"
+                      << "  Finish Time: " << process->getFinishTime() << "\n"
+                      << "  Turnaround Time: " << process->getTurnaroundTime() << "\n"
+                      << "  Waiting Time: " << process->getWaitingTime() << "\n\n";
         }
     }
 }
