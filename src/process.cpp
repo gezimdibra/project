@@ -74,22 +74,20 @@ int Process::getNextCPUBurstTime() const {
 }
 
 void Process::setFinishTime(int time) {
-    if (state == ProcessState::TERMINATED) {
-        finishTime = time;
-        calculateStatistics();
-    }
+    finishTime = time;
+    calculateStatistics();
 }
 
 void Process::calculateStatistics() {
-    if (finishTime > 0) {
-        turnaroundTime = finishTime - arrivalTime;
-        // Calculate waiting time by subtracting actual processing time from turnaround time
-        int totalProcessingTime = serviceTime + ioTime;
-        waitingTime = turnaroundTime - totalProcessingTime;
-        
-        if (waitingTime < 0) {
-            waitingTime = 0;
-        }
+    turnaroundTime = finishTime - arrivalTime;
+    
+    // Calculate actual waiting time by subtracting CPU and I/O time from turnaround time
+    int totalProcessingTime = serviceTime + ioTime;
+    waitingTime = turnaroundTime - totalProcessingTime;
+    
+    // Account for context switch overhead
+    if (waitingTime < 0) {
+        waitingTime = 0;
     }
 }
 
