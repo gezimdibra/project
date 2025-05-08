@@ -93,5 +93,7 @@ void Process::calculateStatistics() {
 }
 
 void Process::incrementWaitingTime(int time) {
-    waitingTime += time;
+    if (state == ProcessState::READY) {
+        waitingTime += time;
+    }
 }
