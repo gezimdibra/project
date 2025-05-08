@@ -34,10 +34,9 @@ Simulator::~Simulator() {
 void Simulator::initialize(const std::vector<std::shared_ptr<Process>>& processList) {
     processes = processList;
     
-    // Schedule process arrivals
-    for (const auto& process : processes) {
-        Event arrivalEvent(EventType::PROCESS_ARRIVAL, process->getArrivalTime(), process);
-        eventQueue.push(arrivalEvent);
+    // Reset all processes to NEW state
+    for (auto& process : processes) {
+        process->setState(ProcessState::NEW);
     }
 }
 
@@ -59,6 +58,20 @@ void Simulator::setParams(const SimulationParams& simulationParams) {
         activeScheduler = rr100Scheduler;
     }
     
+    // Clear event queue
+    while (!eventQueue.empty()) {
+        eventQueue.pop();
+    }
+    
+    // Schedule process arrivals
+    for (const auto& process : processes) {
+        Event arrivalEvent(EventType::PROCESS_ARRIVAL, process->getArrivalTime(), process);
+        eventQueue.push(arrivalEvent);
+        
+        // Add to active scheduler's process list
+        activeScheduler->addToAllProcesses(process);
+    }
+    
     // Open verbose output file if in verbose mode
     if (params.verboseMode) {
         std::string filename = "trace/";
@@ -72,34 +85,16 @@ void Simulator::setParams(const SimulationParams& simulationParams) {
 }
 
 void Simulator::run() {
-    // Reset for new run
+    // Reset simulation state
     currentTime = 0;
-    
-    // Clear event queue for new run
-    while (!eventQueue.empty()) {
-        eventQueue.pop();
-    }
-    
-    // Re-initialize with process arrivals
-    for (const auto& process : processes) {
-        // Reset process state
-        process->setState(ProcessState::NEW);
-        
-        // Schedule arrival event
-        Event arrivalEvent(EventType::PROCESS_ARRIVAL, process->getArrivalTime(), process);
-        eventQueue.push(arrivalEvent);
-        
-        // Add to active scheduler's process list
-        activeScheduler->addToAllProcesses(process);
-    }
+    activeScheduler->setTotalTime(0);
     
     // Main event loop
     while (!eventQueue.empty()) {
-        // Get next event
         Event event = eventQueue.top();
         eventQueue.pop();
         
-        // Update current time
+        // Update current time and statistics
         int timeElapsed = event.getTime() - currentTime;
         if (timeElapsed > 0) {
             // Update waiting time for processes in ready queue
@@ -109,7 +104,7 @@ void Simulator::run() {
             if (activeScheduler->hasCpuProcess()) {
                 activeScheduler->incrementCpuBusyTime(timeElapsed);
                 
-                // If using Round Robin, update time slice
+                // For Round Robin, update time slice
                 if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(activeScheduler)) {
                     rrScheduler->decrementTimeSlice(timeElapsed);
                 }
@@ -118,7 +113,7 @@ void Simulator::run() {
         
         currentTime = event.getTime();
         
-        // Process the event based on its type
+        // Process the event
         switch (event.getType()) {
             case EventType::PROCESS_ARRIVAL:
                 processArrival(event);
@@ -140,9 +135,8 @@ void Simulator::run() {
         // Check for timer interrupt for Round Robin
         if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(activeScheduler)) {
             if (rrScheduler->hasCpuProcess() && rrScheduler->isTimeSliceExpired()) {
-                // Schedule a timer interrupt
                 Event timerEvent(EventType::TIMER_INTERRUPT, currentTime, 
-                                rrScheduler->getCurrentProcess());
+                               rrScheduler->getCurrentProcess());
                 eventQueue.push(timerEvent);
             }
         }
