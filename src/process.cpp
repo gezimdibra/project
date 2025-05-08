@@ -84,7 +84,7 @@ void Process::calculateStatistics() {
     
     // Calculate actual waiting time by subtracting CPU and I/O time from turnaround time
     int totalProcessingTime = serviceTime + ioTime;
-    waitingTime = turnaround_time - totalProcessingTime;
+    waitingTime = turnaroundTime - totalProcessingTime;
     
     // Account for context switch overhead
     if (waitingTime < 0) {
