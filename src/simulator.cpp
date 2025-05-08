@@ -192,8 +192,9 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
             logStateTransition(process, ProcessState::RUNNING, ProcessState::TERMINATED);
         }
         
-        process->setState(ProcessState::TERMINATED);
+        // Set finish time when process actually completes
         process->setFinishTime(currentTime);
+        process->setState(ProcessState::TERMINATED);
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
@@ -203,6 +204,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         
         process->setState(ProcessState::BLOCKED);
         
+        // Schedule I/O completion
         int ioCompletionTime = currentTime + process->getCurrentBurst().duration;
         Event ioCompletionEvent(EventType::IO_COMPLETION, ioCompletionTime, process);
         eventQueue.push(ioCompletionEvent);
