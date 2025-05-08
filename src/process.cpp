@@ -24,17 +24,6 @@ void Process::addIOBurst(int duration) {
 
 void Process::setState(ProcessState newState) {
     state = newState;
-    
-    // Set finish time when process transitions to TERMINATED state
-    if (newState == ProcessState::TERMINATED && finishTime == 0) {
-        // Get the current time from the last burst completion
-        int lastBurstEnd = 0;
-        for (const auto& burst : bursts) {
-            lastBurstEnd += burst.duration;
-        }
-        finishTime = lastBurstEnd;
-        calculateStatistics();
-    }
 }
 
 void Process::advanceBurst() {
@@ -85,19 +74,22 @@ int Process::getNextCPUBurstTime() const {
 }
 
 void Process::setFinishTime(int time) {
-    finishTime = time;
-    calculateStatistics();
+    // Only set finish time if we haven't already
+    if (finishTime == 0) {
+        finishTime = time;
+        calculateStatistics();
+    }
 }
 
 void Process::calculateStatistics() {
-    turnaroundTime = finishTime - arrivalTime;
-    
-    // Calculate waiting time by subtracting actual processing time
-    int totalProcessingTime = serviceTime + ioTime;
-    waitingTime = turnaroundTime - totalProcessingTime;
-    
-    if (waitingTime < 0) {
-        waitingTime = 0;
+    // Only calculate if we have a valid finish time
+    if (finishTime > 0) {
+        turnaroundTime = finishTime - arrivalTime;
+        waitingTime = turnaroundTime - (serviceTime + ioTime);
+        
+        if (waitingTime < 0) {
+            waitingTime = 0;
+        }
     }
 }
 
