@@ -157,6 +157,14 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     
     // Set total simulation time
     scheduler->setTotalTime(currentTime);
+    
+    // Set finish time for any remaining processes
+    for (auto& process : scheduler->getAllProcesses()) {
+        if (!process->isCompleted()) {
+            process->setState(ProcessState::TERMINATED);
+            process->setFinishTime(currentTime);
+        }
+    }
 }
 
 void Simulator::processArrival(const Event& event, std::shared_ptr<Scheduler> scheduler) {
@@ -184,9 +192,8 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
             logStateTransition(process, ProcessState::RUNNING, ProcessState::TERMINATED);
         }
         
-        // Set finish time and state when process completes
-        process->setFinishTime(currentTime);
         process->setState(ProcessState::TERMINATED);
+        process->setFinishTime(currentTime);
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
@@ -196,7 +203,6 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         
         process->setState(ProcessState::BLOCKED);
         
-        // Schedule I/O completion
         int ioCompletionTime = currentTime + process->getCurrentBurst().duration;
         Event ioCompletionEvent(EventType::IO_COMPLETION, ioCompletionTime, process);
         eventQueue.push(ioCompletionEvent);
