@@ -35,9 +35,28 @@ int main() {
     // Generate processes
     std::vector<GenProcess> processes;
     
+    // First process always starts at time 0
+    GenProcess firstProcess;
+    firstProcess.id = 1;
+    firstProcess.arrivalTime = 0;
+    
+    // Generate bursts for first process
+    int numBursts = std::max(1, static_cast<int>(burstCountDist(gen)));
+    for (int j = 0; j < numBursts; j++) {
+        int cpuBurst = cpuBurstDist(gen);
+        firstProcess.cpuBursts.push_back(cpuBurst);
+        
+        if (j < numBursts - 1) {
+            int ioBurst = ioBurstDist(gen);
+            firstProcess.ioBursts.push_back(ioBurst);
+        }
+    }
+    processes.push_back(firstProcess);
+    
+    // Generate remaining processes
     int currentArrivalTime = 0;
     
-    for (int i = 0; i < NUM_PROCESSES; i++) {
+    for (int i = 1; i < NUM_PROCESSES; i++) {
         GenProcess process;
         process.id = i + 1;
         
