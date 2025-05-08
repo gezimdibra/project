@@ -158,13 +158,12 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     // Set final statistics
     scheduler->setTotalTime(currentTime);
     
-    // Update finish times for all processes
+    // Only set finish time for processes that haven't completed yet
     for (auto& process : scheduler->getAllProcesses()) {
         if (!process->isCompleted()) {
             process->setState(ProcessState::TERMINATED);
+            process->setFinishTime(currentTime);
         }
-        // Always set finish time to ensure statistics are calculated
-        process->setFinishTime(currentTime);
     }
 }
 
