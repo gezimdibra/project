@@ -86,7 +86,7 @@ void Process::calculateStatistics() {
     int totalBurstTime = serviceTime + ioTime;
     waitingTime = turnaroundTime - totalBurstTime;
     
-    // Ensure waiting time is not negative
+    // Ensure waiting time is not negative due to context switches
     if (waitingTime < 0) {
         waitingTime = 0;
     }
