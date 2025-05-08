@@ -157,14 +157,6 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     
     // Set total simulation time
     scheduler->setTotalTime(currentTime);
-    
-    // Set finish time for any remaining processes
-    for (auto& process : scheduler->getAllProcesses()) {
-        if (!process->isCompleted()) {
-            process->setState(ProcessState::TERMINATED);
-            process->setFinishTime(currentTime);
-        }
-    }
 }
 
 void Simulator::processArrival(const Event& event, std::shared_ptr<Scheduler> scheduler) {
@@ -193,7 +185,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         }
         
         process->setState(ProcessState::TERMINATED);
-        process->setFinishTime(currentTime);  // Set finish time when process actually completes
+        process->setFinishTime(currentTime);  // Set finish time when process completes all bursts
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
