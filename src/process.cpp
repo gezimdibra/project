@@ -24,11 +24,6 @@ void Process::addIOBurst(int duration) {
 
 void Process::setState(ProcessState newState) {
     state = newState;
-    
-    // Calculate statistics when process terminates
-    if (newState == ProcessState::TERMINATED) {
-        calculateStatistics();
-    }
 }
 
 void Process::advanceBurst() {
@@ -84,16 +79,14 @@ void Process::setFinishTime(int time) {
 }
 
 void Process::calculateStatistics() {
-    if (finishTime > 0) {
-        // Calculate turnaround time (completion time - arrival time)
-        turnaroundTime = finishTime - arrivalTime;
-        
-        // Calculate waiting time (turnaround time - CPU time - I/O time)
-        waitingTime = turnaroundTime - serviceTime - ioTime;
-        
-        // Ensure waiting time is not negative
-        if (waitingTime < 0) {
-            waitingTime = 0;
-        }
+    turnaroundTime = finishTime - arrivalTime;
+    
+    // Calculate actual waiting time by subtracting CPU and I/O time from turnaround time
+    int totalProcessingTime = serviceTime + ioTime;
+    waitingTime = turnaroundTime - totalProcessingTime;
+    
+    // Account for context switch overhead
+    if (waitingTime < 0) {
+        waitingTime = 0;
     }
 }
