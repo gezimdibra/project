@@ -104,6 +104,8 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         scheduler->addToAllProcesses(process);
     }
     
+    int completedProcesses = 0;
+    
     // Main event loop
     while (!eventQueue.empty()) {
         Event event = eventQueue.top();
@@ -133,6 +135,9 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
                 break;
             case EventType::CPU_BURST_COMPLETION:
                 processCPUBurstCompletion(event, scheduler);
+                if (event.getProcess()->isCompleted()) {
+                    completedProcesses++;
+                }
                 break;
             case EventType::IO_COMPLETION:
                 processIOCompletion(event, scheduler);
@@ -153,18 +158,15 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
                 eventQueue.push(timerEvent);
             }
         }
+        
+        // Check if all processes are completed
+        if (completedProcesses == static_cast<int>(processes.size())) {
+            break;
+        }
     }
     
     // Set final statistics
     scheduler->setTotalTime(currentTime);
-    
-    // Update finish times for any remaining processes
-    for (auto& process : scheduler->getAllProcesses()) {
-        if (!process->isCompleted()) {
-            process->setState(ProcessState::TERMINATED);
-            process->setFinishTime(currentTime);
-        }
-    }
 }
 
 void Simulator::processArrival(const Event& event, std::shared_ptr<Scheduler> scheduler) {
@@ -192,7 +194,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
             logStateTransition(process, ProcessState::RUNNING, ProcessState::TERMINATED);
         }
         
-        process->setFinishTime(currentTime);  // Set finish time before changing state
+        process->setFinishTime(currentTime);
         process->setState(ProcessState::TERMINATED);
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
