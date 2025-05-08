@@ -99,7 +99,9 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     // Reset all processes and add to scheduler
     for (auto& process : processes) {
         process->setState(ProcessState::NEW);
-        Event arrivalEvent(EventType::PROCESS_ARRIVAL, process->getArrivalTime(), process);
+        // Ensure event time is not less than current time
+        int arrivalTime = std::max(currentTime, process->getArrivalTime());
+        Event arrivalEvent(EventType::PROCESS_ARRIVAL, arrivalTime, process);
         eventQueue.push(arrivalEvent);
         scheduler->addToAllProcesses(process);
     }
@@ -109,27 +111,21 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         Event event = eventQueue.top();
         eventQueue.pop();
         
-        // Calculate time elapsed since last event
-        int timeElapsed = event.getTime() - currentTime;
+        // Ensure time only moves forward
+        currentTime = std::max(currentTime, event.getTime());
         
-        // Update current time
-        currentTime = event.getTime();
-        
-        // Update statistics if time has elapsed
-        if (timeElapsed > 0) {
-            // Update waiting time for processes in ready queue
-            scheduler->updateWaitingTime(timeElapsed);
+        // Update waiting time and CPU busy time
+        if (scheduler->hasCpuProcess()) {
+            scheduler->incrementCpuBusyTime(event.getTime() - currentTime);
             
-            // Update CPU busy time if a process is running
-            if (scheduler->hasCpuProcess()) {
-                scheduler->incrementCpuBusyTime(timeElapsed);
-                
-                // For Round Robin, update time slice
-                if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(scheduler)) {
-                    rrScheduler->decrementTimeSlice(timeElapsed);
-                }
+            // For Round Robin, update time slice
+            if (auto rrScheduler = std::dynamic_pointer_cast<RRScheduler>(scheduler)) {
+                rrScheduler->decrementTimeSlice(event.getTime() - currentTime);
             }
         }
+        
+        // Update waiting time for processes in ready queue
+        scheduler->updateWaitingTime(event.getTime() - currentTime);
         
         // Process the event
         switch (event.getType()) {
@@ -160,8 +156,16 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         }
     }
     
-    // Set final simulation time
+    // Update final statistics
     scheduler->setTotalTime(currentTime);
+    
+    // Ensure all processes have proper finish times
+    for (auto& process : scheduler->getAllProcesses()) {
+        if (!process->isCompleted()) {
+            process->setState(ProcessState::TERMINATED);
+            process->setFinishTime(currentTime);
+        }
+    }
 }
 
 void Simulator::processArrival(const Event& event, std::shared_ptr<Scheduler> scheduler) {
@@ -200,6 +204,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         
         process->setState(ProcessState::BLOCKED);
         
+        // Calculate I/O completion time based on current time
         int ioCompletionTime = currentTime + process->getCurrentBurst().duration;
         Event ioCompletionEvent(EventType::IO_COMPLETION, ioCompletionTime, process);
         eventQueue.push(ioCompletionEvent);
@@ -275,6 +280,7 @@ void Simulator::scheduleProcess(std::shared_ptr<Process> process, std::shared_pt
         }
     }
     
+    // Calculate completion time based on current time
     int completionTime = currentTime + remaining;
     Event completionEvent(EventType::CPU_BURST_COMPLETION, completionTime, process);
     eventQueue.push(completionEvent);
@@ -302,6 +308,7 @@ void Simulator::contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_p
     scheduler->clearCurrentProcess();
     scheduler->incrementContextSwitchCount();
     
+    // Calculate context switch completion time based on current time
     int completionTime = currentTime + processSwitchTime;
     Event completionEvent(EventType::CONTEXT_SWITCH_COMPLETE, completionTime, newProcess);
     eventQueue.push(completionEvent);
