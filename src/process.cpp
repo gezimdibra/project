@@ -24,6 +24,11 @@ void Process::addIOBurst(int duration) {
 
 void Process::setState(ProcessState newState) {
     state = newState;
+    
+    // If process is terminated, set finish time
+    if (newState == ProcessState::TERMINATED) {
+        setFinishTime(finishTime);
+    }
 }
 
 void Process::advanceBurst() {
@@ -74,11 +79,17 @@ int Process::getNextCPUBurstTime() const {
 }
 
 void Process::setFinishTime(int time) {
-    finishTime = time;
-    calculateStatistics();
+    if (state == ProcessState::TERMINATED) {
+        finishTime = time;
+        calculateStatistics();
+    }
 }
 
 void Process::calculateStatistics() {
-    turnaroundTime = finishTime - arrivalTime;
-    // waitingTime is calculated throughout the simulation
+    if (finishTime > 0) {
+        turnaroundTime = finishTime - arrivalTime;
+        // Waiting time is turnaround time minus CPU service time and I/O time
+        waitingTime = turnaroundTime - serviceTime - ioTime;
+        if (waitingTime < 0) waitingTime = 0;
+    }
 }
