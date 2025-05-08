@@ -25,8 +25,8 @@ void Process::addIOBurst(int duration) {
 void Process::setState(ProcessState newState) {
     state = newState;
     
-    // If process is terminated, calculate statistics
-    if (newState == ProcessState::TERMINATED && finishTime > 0) {
+    // Calculate statistics when process terminates
+    if (newState == ProcessState::TERMINATED) {
         calculateStatistics();
     }
 }
@@ -80,9 +80,7 @@ int Process::getNextCPUBurstTime() const {
 
 void Process::setFinishTime(int time) {
     finishTime = time;
-    if (state == ProcessState::TERMINATED) {
-        calculateStatistics();
-    }
+    calculateStatistics();
 }
 
 void Process::calculateStatistics() {
@@ -90,9 +88,9 @@ void Process::calculateStatistics() {
         // Calculate turnaround time (completion time - arrival time)
         turnaroundTime = finishTime - arrivalTime;
         
-        // Calculate waiting time (turnaround time - total burst time)
-        int totalBurstTime = serviceTime + ioTime;
-        waitingTime = turnaroundTime - totalBurstTime;
+        // Calculate waiting time
+        // Waiting time = Turnaround time - (CPU burst time + I/O time)
+        waitingTime = turnaroundTime - (serviceTime + ioTime);
         
         // Ensure waiting time is not negative
         if (waitingTime < 0) {
