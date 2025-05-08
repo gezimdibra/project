@@ -88,8 +88,7 @@ void Process::calculateStatistics() {
         // Calculate turnaround time (completion time - arrival time)
         turnaroundTime = finishTime - arrivalTime;
         
-        // Calculate waiting time
-        // Total time spent in ready queue
+        // Calculate waiting time (turnaround time - CPU time - I/O time)
         waitingTime = turnaroundTime - serviceTime - ioTime;
         
         // Ensure waiting time is not negative
