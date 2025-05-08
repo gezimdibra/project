@@ -45,7 +45,7 @@ int Process::getRemainingCPUTime() const {
     int remaining = 0;
     for (size_t i = currentBurst; i < bursts.size(); i++) {
         if (bursts[i].type == BurstType::CPU) {
-            remaining += (i == currentBurst) ? bursts[i].remaining : bursts[i].duration;
+            remaining += (i == static_cast<size_t>(currentBurst)) ? bursts[i].remaining : bursts[i].duration;
         }
     }
     return remaining;
@@ -74,16 +74,22 @@ int Process::getNextCPUBurstTime() const {
 }
 
 void Process::setFinishTime(int time) {
-    finishTime = time;
-    calculateStatistics();
+    if (state == ProcessState::TERMINATED) {
+        finishTime = time;
+        calculateStatistics();
+    }
 }
 
 void Process::calculateStatistics() {
-    turnaroundTime = finishTime - arrivalTime;
-    waitingTime = turnaroundTime - (serviceTime + ioTime);
-    
-    if (waitingTime < 0) {
-        waitingTime = 0;
+    if (finishTime > 0) {
+        turnaroundTime = finishTime - arrivalTime;
+        // Calculate waiting time by subtracting actual processing time from turnaround time
+        int totalProcessingTime = serviceTime + ioTime;
+        waitingTime = turnaroundTime - totalProcessingTime;
+        
+        if (waitingTime < 0) {
+            waitingTime = 0;
+        }
     }
 }
 
