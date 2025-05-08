@@ -158,7 +158,7 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
     // Set final statistics
     scheduler->setTotalTime(currentTime);
     
-    // Only set finish time for processes that haven't completed yet
+    // Update finish times for any remaining processes
     for (auto& process : scheduler->getAllProcesses()) {
         if (!process->isCompleted()) {
             process->setState(ProcessState::TERMINATED);
@@ -192,7 +192,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
             logStateTransition(process, ProcessState::RUNNING, ProcessState::TERMINATED);
         }
         
-        // Set finish time when process actually completes
+        // Set finish time when process completes all bursts
         process->setFinishTime(currentTime);
         process->setState(ProcessState::TERMINATED);
         scheduler->clearCurrentProcess();
