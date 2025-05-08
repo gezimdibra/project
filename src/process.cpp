@@ -79,14 +79,13 @@ void Process::setFinishTime(int time) {
 }
 
 void Process::calculateStatistics() {
-    // Calculate turnaround time (completion time - arrival time)
+    // Simple turnaround time calculation: finish time - arrival time
     turnaroundTime = finishTime - arrivalTime;
     
-    // Calculate waiting time (turnaround time - total burst time)
-    int totalBurstTime = serviceTime + ioTime;
-    waitingTime = turnaroundTime - totalBurstTime;
+    // Waiting time is turnaround time minus burst times
+    waitingTime = turnaroundTime - (serviceTime + ioTime);
     
-    // Ensure waiting time is not negative due to context switches
+    // Ensure waiting time is not negative
     if (waitingTime < 0) {
         waitingTime = 0;
     }
