@@ -109,11 +109,18 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         Event event = eventQueue.top();
         eventQueue.pop();
         
-        // Update time and statistics
+        // Calculate time elapsed since last event
         int timeElapsed = event.getTime() - currentTime;
+        
+        // Update current time
+        currentTime = event.getTime();
+        
+        // Update statistics if time has elapsed
         if (timeElapsed > 0) {
+            // Update waiting time for processes in ready queue
             scheduler->updateWaitingTime(timeElapsed);
             
+            // Update CPU busy time if a process is running
             if (scheduler->hasCpuProcess()) {
                 scheduler->incrementCpuBusyTime(timeElapsed);
                 
@@ -123,8 +130,6 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
                 }
             }
         }
-        
-        currentTime = event.getTime();
         
         // Process the event
         switch (event.getType()) {
@@ -155,7 +160,7 @@ void Simulator::runScheduler(std::shared_ptr<Scheduler> scheduler) {
         }
     }
     
-    // Set total simulation time
+    // Set final simulation time
     scheduler->setTotalTime(currentTime);
 }
 
@@ -185,7 +190,7 @@ void Simulator::processCPUBurstCompletion(const Event& event, std::shared_ptr<Sc
         }
         
         process->setState(ProcessState::TERMINATED);
-        process->setFinishTime(currentTime);  // Set finish time when process completes all bursts
+        process->setFinishTime(currentTime);
         scheduler->clearCurrentProcess();
         scheduleNextEvent(scheduler);
     } else if (process->getCurrentBurst().type == BurstType::IO) {
@@ -238,8 +243,7 @@ void Simulator::processTimerInterrupt(const Event& event, std::shared_ptr<Schedu
     }
 }
 
-void Simulator::processContextSwitchComplete([[maybe_unused]] const Event& event, 
-                                           std::shared_ptr<Scheduler> scheduler) {
+void Simulator::processContextSwitchComplete(const Event& event, std::shared_ptr<Scheduler> scheduler) {
     scheduleNextEvent(scheduler);
 }
 
@@ -293,8 +297,7 @@ void Simulator::checkPreemption(std::shared_ptr<Process> newProcess, std::shared
     }
 }
 
-void Simulator::contextSwitch([[maybe_unused]] std::shared_ptr<Process> oldProcess, 
-                            std::shared_ptr<Process> newProcess,
+void Simulator::contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_ptr<Process> newProcess,
                             std::shared_ptr<Scheduler> scheduler) {
     scheduler->clearCurrentProcess();
     scheduler->incrementContextSwitchCount();
