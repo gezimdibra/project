@@ -79,15 +79,14 @@ void Process::setFinishTime(int time) {
 }
 
 void Process::calculateStatistics() {
-    // Basic turnaround time: finish time - arrival time
-    turnaroundTime = finishTime - arrivalTime;
-    
-    // Waiting time: turnaround time - (CPU time + I/O time)
-    waitingTime = turnaroundTime - (serviceTime + ioTime);
-    
-    // Ensure waiting time is never negative
-    if (waitingTime < 0) {
-        waitingTime = 0;
+    // Only calculate if process has actually finished
+    if (finishTime > 0) {
+        turnaroundTime = finishTime - arrivalTime;
+        waitingTime = turnaroundTime - (serviceTime + ioTime);
+        
+        if (waitingTime < 0) {
+            waitingTime = 0;
+        }
     }
 }
 
