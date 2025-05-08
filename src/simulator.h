@@ -57,19 +57,19 @@ private:
     std::ofstream verboseOutput;
     
     // Helper methods
-    void processArrival(const Event& event);
-    void processCPUBurstCompletion(const Event& event);
-    void processIOCompletion(const Event& event);
-    void processTimerInterrupt(const Event& event);
-    void processContextSwitchComplete(const Event& event);
-    
-    void scheduleNextEvent();
-    void scheduleProcess(std::shared_ptr<Process> process);
-    void checkPreemption(std::shared_ptr<Process> newProcess);
-    void contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_ptr<Process> newProcess);
-    
-    void logStateTransition(std::shared_ptr<Process> process, 
-                           ProcessState oldState, ProcessState newState);
+    void runScheduler(std::shared_ptr<Scheduler> scheduler);
+    void processArrival(const Event& event, std::shared_ptr<Scheduler> scheduler);
+    void processCPUBurstCompletion(const Event& event, std::shared_ptr<Scheduler> scheduler);
+    void processIOCompletion(const Event& event, std::shared_ptr<Scheduler> scheduler);
+    void processTimerInterrupt(const Event& event, std::shared_ptr<Scheduler> scheduler);
+    void processContextSwitchComplete(const Event& event, std::shared_ptr<Scheduler> scheduler);
+    void scheduleNextEvent(std::shared_ptr<Scheduler> scheduler);
+    void scheduleProcess(std::shared_ptr<Process> process, std::shared_ptr<Scheduler> scheduler);
+    void checkPreemption(std::shared_ptr<Process> newProcess, std::shared_ptr<Scheduler> scheduler);
+    void contextSwitch(std::shared_ptr<Process> oldProcess, std::shared_ptr<Process> newProcess,
+                      std::shared_ptr<Scheduler> scheduler);
+    void logStateTransition(std::shared_ptr<Process> process, ProcessState oldState, ProcessState newState);
+    void outputSchedulerResults(std::shared_ptr<Scheduler> scheduler) const;
     
 public:
     Simulator(int switchTime);
