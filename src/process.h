@@ -90,7 +90,7 @@ public:
     int getTurnaroundTime() const { return turnaroundTime; }
     int getWaitingTime() const { return waitingTime; }
     void calculateStatistics();
-    void incrementWaitingTime(int time) { waitingTime += time; }
+    void incrementWaitingTime(int time);
 };
 
 #endif // PROCESS_H
