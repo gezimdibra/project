@@ -6,6 +6,8 @@ Scheduler::Scheduler(const std::string& schedulerName, int switchTime)
       contextSwitchTime(switchTime),
       contextSwitchCount(0),
       isCpuBusy(false),
+      cpuUtilization(0.0),
+      currentProcess(nullptr),
       name(schedulerName) {
 }
 
@@ -28,8 +30,7 @@ void Scheduler::clearCurrentProcess() {
 }
 
 double Scheduler::getCpuUtilization() const {
-    if (totalTime == 0) return 0.0;
-    return static_cast<double>(cpuBusyTime) / totalTime * 100.0;
+    return cpuUtilization;
 }
 
 void Scheduler::addToAllProcesses(std::shared_ptr<Process> process) {
